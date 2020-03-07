@@ -1,0 +1,8 @@
+/tikatree.egg-info
+/build
+/dist
+*.log
+/.settings/
+/tikatree/*.pyc
+/tikatree/*/*.pyc
+.DS_Store
