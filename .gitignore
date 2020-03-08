@@ -6,3 +6,4 @@
 /tikatree/*.pyc
 /tikatree/*/*.pyc
 .DS_Store
+notes.txt
