@@ -1,0 +1,4 @@
+-r requirements.txt
+black                  # Automatic Style Formatting
+flake8                 # PEP checking
+isort[requirements]    # Imports Sorting

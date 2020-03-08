@@ -35,4 +35,6 @@ I've included some output examples in the `output_examples` folder.
 
 #### [Project](https://phabricator.kairohm.dev/project/view/51/)
 
+#### [GitHub Mirror](https://github.com/kairohm/tikatree)
+
 #### [Contributing](https://bookstack.kairohm.dev/books/keep-dreaming-project/page/contributing-to-the-keep-dreaming-project)

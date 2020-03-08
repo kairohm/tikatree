@@ -10,6 +10,7 @@ from tika import parser
 from .DisplayablePath import DisplayablePath
 
 BLOCK_SIZE = 65536
+VERSION = "0.0.4"
 
 
 def createMetadata(basepath, file):
@@ -125,7 +126,7 @@ def initArgparse() -> argparse.ArgumentParser:
         description="A directory tree metadata parser using Apache Tika, by default it runs -d, -m, -f in the current directory",
     )
     parser.add_argument(
-        "-v", "--version", action="version", version=f"{parser.prog} version 0.0.3",
+        "-v", "--version", action="version", version=f"{parser.prog} version {VERSION}",
     )
     parser.add_argument("DIRECTORY", type=Path, default=".", help="directory to parse")
     parser.add_argument(
