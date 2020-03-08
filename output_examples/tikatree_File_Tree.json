@@ -1,0 +1,78 @@
+{
+    ".": [
+        {
+            ".gitignore": {
+                "modified": "2020-03-07 13:02:12.754575",
+                "size": "0.1Kb",
+                "md5": "60195a3dde5ab89f11b17cf73fa2a15d",
+                "sha256": "812dc1d1105381ce2aebf65bc6245c1efa692283a891cb549abd0f49e514f4e0"
+            }
+        },
+        {
+            "LICENSE": {
+                "modified": "2020-03-06 22:51:24.984411",
+                "size": "1.04Kb",
+                "md5": "a1fbc18fa04ef91012a383501cea25cc",
+                "sha256": "d4ab1739a96f9f381153e2a7436d78c65469065cad6e7bf166815a5890b296da"
+            }
+        },
+        {
+            "notes.txt": {
+                "modified": "2020-03-07 13:06:05.345654",
+                "size": "0.1Kb",
+                "md5": "7538dc1dfa02fd79a37f4fca3cc023da",
+                "sha256": "c7b334778944ebf6d7474885faf4d2b65249b1fcd52374ec54da6244f4ca8673"
+            }
+        },
+        {
+            "README.md": {
+                "modified": "2020-03-08 04:50:29.283035",
+                "size": "1.4Kb",
+                "md5": "6c894845710cd27260e100c32533b098",
+                "sha256": "d51446fcc13c569381ea6abd114365cfad9327a6978c3cec90ab156f2170e929"
+            }
+        },
+        {
+            "requirements.txt": {
+                "modified": "2020-03-08 01:34:07.663419",
+                "size": "0.01Kb",
+                "md5": "c74d86484743c65b9f3c5aaa045e340b",
+                "sha256": "a2385791bf3dedddaaa31bfa2cf2b523b03a2828ba6fff511a65ac2892f12a73"
+            }
+        },
+        {
+            "setup.py": {
+                "modified": "2020-03-08 01:34:17.423182",
+                "size": "0.79Kb",
+                "md5": "49e0c4c44e55657e696f19c6d748f014",
+                "sha256": "c28c680ce7725d74c78acb384a9c9dede2621884d838d01023a74f647d7e07cc"
+            }
+        }
+    ],
+    "tikatree": [
+        {
+            "DisplayablePath.py": {
+                "modified": "2020-03-07 23:15:26.154516",
+                "size": "2.35Kb",
+                "md5": "6ffe10219319c47125086875e64e6961",
+                "sha256": "2c34c4ca779cef9bbda5c2e3579d2d95dd5b78e0a6cdb248b11c3e07970c9065"
+            }
+        },
+        {
+            "tikatree.py": {
+                "modified": "2020-03-08 04:33:24.668378",
+                "size": "5.6Kb",
+                "md5": "3ef541f5cf32ac763300bea9deb3dfdd",
+                "sha256": "035e55ea3001dfd976144b2de680a175b41771b1b670f956924b6c615cc37f2d"
+            }
+        },
+        {
+            "__init__.py": {
+                "modified": "2020-03-07 02:30:04.445739",
+                "size": "0.0Kb",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+        }
+    ]
+}

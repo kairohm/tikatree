@@ -2,7 +2,11 @@
 
 ## Directory tree metadata parser using [Apache Tika](http://tika.apache.org/)
 
-tikatree parses all files in a directory for metadata, it then saves both the directory tree and metadata into two seperate text files.
+tikatree parses all files in a directory and creates a:
+
+- _Metadata.json - A single file with the metdata from each file that was parsed
+- _File_Tree.json - A list of all files and directories with some basic information
+- _Directory_Tree.txt - A graphical representation of the directory
 
 ### Installation
 
@@ -12,18 +16,18 @@ tikatree uses [tika-python](https://github.com/chrismattmann/tika-python) for in
 
 ### Usage
 
-Open up a command line and type `tikatree <directory>`, it'll create a directorystub_Directory_Tree.txt and a directorystub_Metadata.txt.
+Open up a command line and type `tikatree <directory>`, by default it'll create all files at or above that directory.
 
 optional arguments:
-  -h, --help     show a help message and exit
-  -v, --version  show the program's version number and exit
+  -h, --help           show this help message and exit
+  -v, --version        show program's version number and exit
+  -d, --directorytree  create directory tree
+  -m, --metadata       parse metadata
+  -f, --filetree       create file tree
 
 ### Example
 
-`tikatree .\VM_Hardware_J\` would create these two text files above `VM_Hardware_J`:
-
-- VM_Hardware_J_Directory_Tree.txt
-- VM_Hardware_J_Metadata.txt
+I've included some output examples in the `output_examples` folder.
 
 ### Part of the Keep Dreaming Project
 
