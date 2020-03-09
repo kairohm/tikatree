@@ -4,9 +4,10 @@
 
 tikatree parses all files in a directory and creates a:
 
-- _Metadata.json - A single file with the metdata from each file that was parsed
-- _File_Tree.json - A list of all files and directories with some basic information
-- _Directory_Tree.txt - A graphical representation of the directory
+- _metadata.json - A single file with the metdata from each file that was parsed
+- _file_tree.json - A list of all files and directories with some basic information
+- _directory_tree.txt - A graphical representation of the directory
+- _sfv.sfv - A CRC32 checksum
 
 ### Installation
 
@@ -18,12 +19,15 @@ tikatree uses [tika-python](https://github.com/chrismattmann/tika-python) for in
 
 Open up a command line and type `tikatree <directory>`, by default it'll create all files at or above that directory.
 
+```
 optional arguments:
   -h, --help           show this help message and exit
   -v, --version        show program's version number and exit
   -d, --directorytree  create directory tree
-  -m, --metadata       parse metadata
   -f, --filetree       create file tree
+  -m, --metadata       parse metadata
+  -s, --sfv            create sfv file
+```
 
 ### Example
 

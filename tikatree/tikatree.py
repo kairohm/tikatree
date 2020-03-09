@@ -4,16 +4,19 @@ import json
 from datetime import datetime
 from hashlib import md5, sha256
 from pathlib import Path
+from zlib import crc32
 
 from tika import parser
 
 from .DisplayablePath import DisplayablePath
 
 BLOCK_SIZE = 65536
-VERSION = "0.0.4"
+VERSION = "0.0.5"
 
 
 def createMetadata(basepath, file):
+    parents = basepath.parents[0]
+    file = parents.joinpath(file)
     if Path(file).exists() is True:
         raise FileExistsError(f"{file} exists")
     print("Creating : ", file)
@@ -34,6 +37,8 @@ def createMetadata(basepath, file):
 
 
 def createDirectoryTree(basepath, file):
+    parents = basepath.parents[0]
+    file = parents.joinpath(file)
     if Path(file).exists() is True:
         raise FileExistsError(f"{file} exists")
     print("Creating : ", file)
@@ -47,6 +52,8 @@ def createDirectoryTree(basepath, file):
 
 
 def createFileTree(basepath, file):
+    parents = basepath.parents[0]
+    file = parents.joinpath(file)
     if Path(file).exists() is True:
         raise FileExistsError(f"{file} exists")
     print("Creating : ", file)
@@ -55,6 +62,7 @@ def createFileTree(basepath, file):
             try:
                 # Get file info
                 i = Path(item)
+                filename = i.name
                 # Get file size, convert to Kb
                 size = i.stat().st_size
                 size = round(size / 1024, 2)
@@ -77,10 +85,10 @@ def createFileTree(basepath, file):
                 file_info["size"] = f"{size}Kb"
                 file_info["md5"] = md.hexdigest()
                 file_info["sha256"] = sha.hexdigest()
-                file_data[f"{i.name}"] = file_info
+                file_data[f"{filename}"] = file_info
                 createJson(basepath, file, item, file_data)
             except OSError as oserr:
-                print(f"{oserr}: Error parsing : {i.name}")
+                print(f"{oserr}: Error parsing : {filename}")
 
 
 def createJson(basepath, jsonfile, item, file_data):
@@ -121,9 +129,38 @@ def writeJson(data, jsonfile):
         print(f"{oserr}: Error appending : {jsonfile}")
 
 
+def createSfv(basepath, file):
+    parents = basepath.parents[0]
+    file = parents.joinpath(file)
+    if Path(file).exists() is True:
+        raise FileExistsError(f"{file} exists")
+    print("Creating : ", file)
+    for item in basepath.rglob("*"):
+        if item.is_file():
+            try:
+                # Get file info
+                i = Path(item)
+                relative = i.relative_to(parents)
+                crc = 0
+                with open(i, "rb") as f:
+                    fb = f.read(BLOCK_SIZE)
+                    while len(fb) > 0:
+                        crc = crc32(fb, crc)
+                        fb = f.read(BLOCK_SIZE)
+                crc = format(crc & 0xFFFFFFFF, "08x")
+                print(f"{relative} {crc}\n")
+            except OSError as oserr:
+                print(f"{oserr}: Error creating checksums for : {file}")
+            try:
+                with open(f"{file}", "a", encoding="utf-8") as f:
+                    f.writelines(f"{relative} {crc}\n")
+            except OSError as oserr:
+                print(f"{oserr}: Error writing : {file}")
+
+
 def initArgparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="A directory tree metadata parser using Apache Tika, by default it runs -d, -m, -f in the current directory",
+        description="A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s",
     )
     parser.add_argument(
         "-v", "--version", action="version", version=f"{parser.prog} version {VERSION}",
@@ -132,10 +169,11 @@ def initArgparse() -> argparse.ArgumentParser:
     parser.add_argument(
         "-d", "--directorytree", action="store_true", help="create directory tree"
     )
-    parser.add_argument("-m", "--metadata", action="store_true", help="parse metadata")
     parser.add_argument(
         "-f", "--filetree", action="store_true", help="create file tree"
     )
+    parser.add_argument("-m", "--metadata", action="store_true", help="parse metadata")
+    parser.add_argument("-s", "--sfv", action="store_true", help="create sfv file")
     return parser
 
 
@@ -145,14 +183,16 @@ def main():
     parser = initArgparse()
     args = parser.parse_args()
     d = args.directorytree
-    m = args.metadata
     f = args.filetree
+    m = args.metadata
+    s = args.sfv
 
     if Path(args.DIRECTORY).exists() is True:
         basepath = Path(args.DIRECTORY)
-        metadata = f"{basepath.stem}_Metadata.json"
-        directorytree = f"{basepath.stem}_Directory_Tree.txt"
-        filetree = f"{basepath.stem}_File_Tree.json"
+        directorytree = f"{basepath.stem}_directory_tree.txt"
+        filetree = f"{basepath.stem}_file_tree.json"
+        metadata = f"{basepath.stem}_metadata.json"
+        sfv = f"{basepath.stem}_sfv.sfv"
     else:
         raise NotADirectoryError(f"{args.DIRECTORY} does not exist")
 
@@ -162,10 +202,13 @@ def main():
         createFileTree(basepath, filetree)
     elif m is True:
         createMetadata(basepath, metadata)
+    elif s is True:
+        createSfv(basepath, sfv)
     else:
         createDirectoryTree(basepath, directorytree)
         createFileTree(basepath, filetree)
         createMetadata(basepath, metadata)
+        createSfv(basepath, sfv)
 
 
 if __name__ == "__main__":
