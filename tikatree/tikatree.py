@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-import json
 from argparse import ArgumentParser
+from collections import defaultdict
 from datetime import datetime
+from functools import lru_cache
 from hashlib import md5, sha256
+from json import dump
 from pathlib import Path
+from time import time
 from zlib import crc32
 
 from tika import parser
@@ -15,33 +18,29 @@ VERSION = "0.0.6"
 
 
 def createMetadata(basepath, file):
+    print(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
-    if Path(file).exists() is True:
-        raise FileExistsError(f"{file} exists")
-    print("Creating : ", file)
-    for item in basepath.rglob("*"):
+    jsondata = defaultdict(dict)
+    for item in filesCache(basepath):
         if item.is_file():
             try:
                 # Get file info
-                i = Path(item)
+                pathitem = Path(item)
                 p = Path.resolve(item)
                 parsed = parser.from_file(f"{p}")
-
-                # Create json data from file info
-                file_data = {}
-                file_data[f"{i.name}"] = parsed["metadata"]
-                createJson(basepath, file, item, file_data)
+                # Create data from file info
+                file_info = parsed["metadata"]
+                createJson(basepath, pathitem, file_info, jsondata)
             except OSError as oserr:
-                print(f"{oserr}: Error parsing : {i.name}")
+                print(f"{oserr}: Error parsing : {pathitem.name}")
+    writeJson(jsondata, file)
 
 
 def createDirectoryTree(basepath, file):
+    print(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
-    if Path(file).exists() is True:
-        raise FileExistsError(f"{file} exists")
-    print("Creating : ", file)
     paths = DisplayablePath.make_tree(Path(basepath))
     dirtree_list = []
     for path in paths:
@@ -54,26 +53,25 @@ def createDirectoryTree(basepath, file):
 
 
 def createFileTree(basepath, file):
+    print(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
-    if Path(file).exists() is True:
-        raise FileExistsError(f"{file} exists")
-    print("Creating : ", file)
-    for item in basepath.rglob("*"):
+    jsondata = defaultdict(dict)
+    for item in filesCache(basepath):
         if item.is_file():
             try:
                 # Get file info
-                i = Path(item)
-                filename = i.name
+                pathitem = Path(item)
+                filename = pathitem.name
                 # Get file size, convert to KB
-                size = i.stat().st_size
+                size = pathitem.stat().st_size
                 size = round(size / 1024, 2)
                 # Get modification time (creation time can vary by OS)
-                mod_time = datetime.fromtimestamp(i.stat().st_mtime)
+                mod_time = datetime.fromtimestamp(pathitem.stat().st_mtime)
                 # Get hashes of file contents
                 sha = sha256()
                 md = md5()
-                with open(i, "rb") as f:
+                with open(pathitem, "rb") as f:
                     fb = f.read(BLOCK_SIZE)
                     while len(fb) > 0:
                         sha.update(fb)
@@ -82,85 +80,82 @@ def createFileTree(basepath, file):
 
                 # Create json data from file info
                 file_info = {}
-                file_data = {}
                 file_info["modified"] = f"{mod_time}"
                 file_info["size"] = f"{size}KB"
                 file_info["md5"] = md.hexdigest()
                 file_info["sha256"] = sha.hexdigest()
-                file_data[f"{filename}"] = file_info
-                createJson(basepath, file, item, file_data)
+                createJson(basepath, pathitem, file_info, jsondata)
             except OSError as oserr:
                 print(f"{oserr}: Error parsing : {filename}")
-
-
-def createJson(basepath, jsonfile, item, file_data):
-    i = Path(item)
-    relative = i.relative_to(basepath)
-    parents = relative.parents[0]
-    directory = []
-    base_directory = {}
-    directory.append(file_data)
-
-    # Write or append to json file
-    if Path(jsonfile).exists() is False:
-        # Create initial json data
-        base_directory[f"{parents}"] = directory
-        writeJson(base_directory, jsonfile)
-        print(relative)
-    else:
-        with open(jsonfile, encoding="utf-8") as outfile:
-            try:
-                data = json.load(outfile)
-                try:
-                    temp = data[f"{parents}"]
-                    temp.append(file_data)
-                except KeyError:
-                    # Create directory if it doesn't exist
-                    data[f"{parents}"] = directory
-                print(relative)
-                writeJson(data, jsonfile)
-            except OSError as oserr:
-                print(f"{oserr}: Error reading : {outfile}")
-
-
-def writeJson(data, jsonfile):
-    try:
-        with open(jsonfile, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-    except OSError as oserr:
-        print(f"{oserr}: Error appending : {jsonfile}")
+    writeJson(jsondata, file)
 
 
 def createSfv(basepath, file):
+    print(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
-    if Path(file).exists() is True:
-        raise FileExistsError(f"{file} exists")
-    print("Creating : ", file)
-    sfvdict = {}
-    for item in basepath.rglob("*"):
+    sfv_dict = {}
+    for item in filesCache(basepath):
         if item.is_file():
             try:
                 # Get file info
-                i = Path(item)
-                relative = i.relative_to(parents)
+                pathitem = Path(item)
+                relative = pathitem.relative_to(parents)
                 crc = 0
-                with open(i, "rb") as f:
+                # Get CRC32 of file contents
+                with open(pathitem, "rb") as f:
                     fb = f.read(BLOCK_SIZE)
                     while len(fb) > 0:
                         crc = crc32(fb, crc)
                         fb = f.read(BLOCK_SIZE)
                 crc = format(crc & 0xFFFFFFFF, "08x")
-                sfvdict[f"{relative}"] = f"{crc}"
+                sfv_dict[f"{relative}"] = f"{crc}"
                 print(f"{relative} {crc}\n")
             except OSError as oserr:
                 print(f"{oserr}: Error creating checksums for : {file}")
-        try:
-            with open(f"{file}", "a", encoding="utf-8") as f:
-                for k, v in sfvdict.items():
-                    f.writelines(f"{relative} {crc}\n")
-        except OSError as oserr:
-            print(f"{oserr}: Error writing : {file}")
+    try:
+        with open(f"{file}", "a", encoding="utf-8") as f:
+            for k, v in sfv_dict.items():
+                f.writelines(f"{relative} {crc}\n")
+    except OSError as oserr:
+        print(f"{oserr}: Error writing : {file}")
+
+
+def createJson(basepath, pathitem, file_info, jsondata):
+    relative = pathitem.relative_to(basepath)
+    parents = relative.parents[0]
+    pathname = pathitem.name
+    file_data = {}
+    file_data[f"{pathname}"] = file_info
+    jsondata[f"{parents}"].update(file_data)
+    print(relative)
+
+
+def writeJson(data, jsonfile):
+    try:
+        with open(jsonfile, "w", encoding="utf-8") as f:
+            dump(data, f, indent=4, ensure_ascii=False)
+    except OSError as oserr:
+        print(f"{oserr}: Error writing : {jsonfile}")
+
+
+def checkFileExists(file):
+    if Path(file).exists() is True:
+        print("Warning")
+        del_file = input(f"{file} exists, would you like to delete it? Y or N: ")
+        if del_file == "Y" or del_file == "y":
+            print(f"Deleting: {file}")
+            Path(file).unlink()
+        else:
+            raise FileExistsError(f"{file} exists")
+
+
+@lru_cache(maxsize=None)
+def filesCache(basepath):
+    filescache = []
+    for item in basepath.rglob("*"):
+        filescache.append(item)
+    return filescache
 
 
 def initArgparse() -> ArgumentParser:
@@ -171,6 +166,7 @@ def initArgparse() -> ArgumentParser:
         "-v", "--version", action="version", version=f"{parser.prog} version {VERSION}",
     )
     parser.add_argument("DIRECTORY", type=Path, default=".", help="directory to parse")
+    # parser.add_argument("FILETYPE", type=str, default="*", nargs='*', help="filetypes to parse, separate with spaces")
     parser.add_argument(
         "-d", "--directorytree", action="store_true", help="create directory tree"
     )
@@ -184,7 +180,7 @@ def initArgparse() -> ArgumentParser:
 
 def main():
     """Run tikatree from command line"""
-
+    start_time = time()
     parser = initArgparse()
     args = parser.parse_args()
     d = args.directorytree
@@ -194,26 +190,37 @@ def main():
 
     if Path(args.DIRECTORY).exists() is True:
         basepath = Path(args.DIRECTORY)
-        directorytree = f"{basepath.stem}_directory_tree.txt"
-        filetree = f"{basepath.stem}_file_tree.json"
-        metadata = f"{basepath.stem}_metadata.json"
-        sfv = f"{basepath.stem}.sfv"
+        directorytree = f"{basepath.name}_directory_tree.txt"
+        filetree = f"{basepath.name}_file_tree.json"
+        metadata = f"{basepath.name}_metadata.json"
+        sfv = f"{basepath.name}.sfv"
     else:
         raise NotADirectoryError(f"{args.DIRECTORY} does not exist")
 
     if d is True:
+        checkFileExists(directorytree)
         createDirectoryTree(basepath, directorytree)
     elif f is True:
+        checkFileExists(filetree)
         createFileTree(basepath, filetree)
     elif m is True:
+        checkFileExists(metadata)
         createMetadata(basepath, metadata)
     elif s is True:
+        checkFileExists(sfv)
         createSfv(basepath, sfv)
     else:
+        checkFileExists(directorytree)
+        checkFileExists(filetree)
+        checkFileExists(metadata)
+        checkFileExists(sfv)
         createDirectoryTree(basepath, directorytree)
         createFileTree(basepath, filetree)
         createMetadata(basepath, metadata)
         createSfv(basepath, sfv)
+
+    stop_time = time()
+    print(f"Finished in {round(stop_time-start_time, 2)} seconds")
 
 
 if __name__ == "__main__":

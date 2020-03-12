@@ -7,7 +7,7 @@ tikatree parses all files in a directory and creates a:
 - _metadata.json - A single file with the metdata from each file that was parsed
 - _file_tree.json - A list of all files and directories with some basic information
 - _directory_tree.txt - A graphical representation of the directory
-- _sfv.sfv - A CRC32 checksum
+- .sfv - A CRC32 checksum
 
 ### Installation
 
