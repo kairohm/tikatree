@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import argparse
 import json
+from argparse import ArgumentParser
 from datetime import datetime
 from hashlib import md5, sha256
 from pathlib import Path
@@ -11,7 +11,7 @@ from tika import parser
 from .DisplayablePath import DisplayablePath
 
 BLOCK_SIZE = 65536
-VERSION = "0.0.5"
+VERSION = "0.0.6"
 
 
 def createMetadata(basepath, file):
@@ -43,12 +43,14 @@ def createDirectoryTree(basepath, file):
         raise FileExistsError(f"{file} exists")
     print("Creating : ", file)
     paths = DisplayablePath.make_tree(Path(basepath))
+    dirtree_list = []
     for path in paths:
-        with open(file, "a", encoding="utf-8") as outfile:
-            try:
-                outfile.writelines(f"{path.displayable()}\n")
-            except OSError as oserr:
-                print(f"{oserr}: Error creating : {file}")
+        dirtree_list.append(f"{path.displayable()}\n")
+    with open(file, "a", encoding="utf-8") as outfile:
+        try:
+            outfile.writelines(dirtree_list)
+        except OSError as oserr:
+            print(f"{oserr}: Error creating : {file}")
 
 
 def createFileTree(basepath, file):
@@ -63,7 +65,7 @@ def createFileTree(basepath, file):
                 # Get file info
                 i = Path(item)
                 filename = i.name
-                # Get file size, convert to Kb
+                # Get file size, convert to KB
                 size = i.stat().st_size
                 size = round(size / 1024, 2)
                 # Get modification time (creation time can vary by OS)
@@ -82,7 +84,7 @@ def createFileTree(basepath, file):
                 file_info = {}
                 file_data = {}
                 file_info["modified"] = f"{mod_time}"
-                file_info["size"] = f"{size}Kb"
+                file_info["size"] = f"{size}KB"
                 file_info["md5"] = md.hexdigest()
                 file_info["sha256"] = sha.hexdigest()
                 file_data[f"{filename}"] = file_info
@@ -135,6 +137,7 @@ def createSfv(basepath, file):
     if Path(file).exists() is True:
         raise FileExistsError(f"{file} exists")
     print("Creating : ", file)
+    sfvdict = {}
     for item in basepath.rglob("*"):
         if item.is_file():
             try:
@@ -148,18 +151,20 @@ def createSfv(basepath, file):
                         crc = crc32(fb, crc)
                         fb = f.read(BLOCK_SIZE)
                 crc = format(crc & 0xFFFFFFFF, "08x")
+                sfvdict[f"{relative}"] = f"{crc}"
                 print(f"{relative} {crc}\n")
             except OSError as oserr:
                 print(f"{oserr}: Error creating checksums for : {file}")
-            try:
-                with open(f"{file}", "a", encoding="utf-8") as f:
+        try:
+            with open(f"{file}", "a", encoding="utf-8") as f:
+                for k, v in sfvdict.items():
                     f.writelines(f"{relative} {crc}\n")
-            except OSError as oserr:
-                print(f"{oserr}: Error writing : {file}")
+        except OSError as oserr:
+            print(f"{oserr}: Error writing : {file}")
 
 
-def initArgparse() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+def initArgparse() -> ArgumentParser:
+    parser = ArgumentParser(
         description="A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s",
     )
     parser.add_argument(
@@ -192,7 +197,7 @@ def main():
         directorytree = f"{basepath.stem}_directory_tree.txt"
         filetree = f"{basepath.stem}_file_tree.json"
         metadata = f"{basepath.stem}_metadata.json"
-        sfv = f"{basepath.stem}_sfv.sfv"
+        sfv = f"{basepath.stem}.sfv"
     else:
         raise NotADirectoryError(f"{args.DIRECTORY} does not exist")
 
