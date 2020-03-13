@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
 from collections import defaultdict
+from csv import DictWriter
 from datetime import datetime
 from functools import lru_cache
 from hashlib import md5, sha256
@@ -14,7 +15,7 @@ from tika import parser
 from .DisplayablePath import DisplayablePath
 
 BLOCK_SIZE = 65536
-VERSION = "0.0.6"
+VERSION = "0.0.7"
 
 
 def createMetadata(basepath, file):
@@ -52,10 +53,11 @@ def createDirectoryTree(basepath, file):
             print(f"{oserr}: Error creating : {file}")
 
 
-def createFileTree(basepath, file):
+def createFileTree(basepath, json, file, csv, csvfile):
     print(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
+    csvfile = parents.joinpath(csvfile)
     jsondata = defaultdict(dict)
     for item in filesCache(basepath):
         if item.is_file():
@@ -87,7 +89,10 @@ def createFileTree(basepath, file):
                 createJson(basepath, pathitem, file_info, jsondata)
             except OSError as oserr:
                 print(f"{oserr}: Error parsing : {filename}")
-    writeJson(jsondata, file)
+    if json is True:
+        writeJson(jsondata, file)
+    if csv is True:
+        createCsv(jsondata, csvfile)
 
 
 def createSfv(basepath, file):
@@ -116,7 +121,7 @@ def createSfv(basepath, file):
     try:
         with open(f"{file}", "a", encoding="utf-8") as f:
             for k, v in sfv_dict.items():
-                f.writelines(f"{relative} {crc}\n")
+                f.writelines(f"{k} {v}\n")
     except OSError as oserr:
         print(f"{oserr}: Error writing : {file}")
 
@@ -158,6 +163,23 @@ def filesCache(basepath):
     return filescache
 
 
+def createCsv(data, file):
+    with open(file, "w", newline="") as csvfile:
+        fieldnames = ["path", "filename", "modified", "size", "md5", "sha256"]
+        writer = DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for path, filename in data.items():
+            for k, v in filename.items():
+                temp = {}
+                temp["path"] = path
+                temp["filename"] = k
+                temp["modified"] = v["modified"]
+                temp["size"] = v["size"]
+                temp["md5"] = v["md5"]
+                temp["sha256"] = v["sha256"]
+                writer.writerow(temp)
+
+
 def initArgparse() -> ArgumentParser:
     parser = ArgumentParser(
         description="A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s",
@@ -168,10 +190,13 @@ def initArgparse() -> ArgumentParser:
     parser.add_argument("DIRECTORY", type=Path, default=".", help="directory to parse")
     # parser.add_argument("FILETYPE", type=str, default="*", nargs='*', help="filetypes to parse, separate with spaces")
     parser.add_argument(
+        "-c", "--csvfiletree", action="store_true", help="create csv file tree"
+    )
+    parser.add_argument(
         "-d", "--directorytree", action="store_true", help="create directory tree"
     )
     parser.add_argument(
-        "-f", "--filetree", action="store_true", help="create file tree"
+        "-f", "--jsonfiletree", action="store_true", help="create json file tree"
     )
     parser.add_argument("-m", "--metadata", action="store_true", help="parse metadata")
     parser.add_argument("-s", "--sfv", action="store_true", help="create sfv file")
@@ -183,41 +208,46 @@ def main():
     start_time = time()
     parser = initArgparse()
     args = parser.parse_args()
-    d = args.directorytree
-    f = args.filetree
-    m = args.metadata
-    s = args.sfv
+    csvtree_arg = args.csvfiletree
+    dirtree_arg = args.directorytree
+    jsontree_arg = args.jsonfiletree
+    meta_arg = args.metadata
+    sfv_arg = args.sfv
 
     if Path(args.DIRECTORY).exists() is True:
         basepath = Path(args.DIRECTORY)
-        directorytree = f"{basepath.name}_directory_tree.txt"
-        filetree = f"{basepath.name}_file_tree.json"
-        metadata = f"{basepath.name}_metadata.json"
-        sfv = f"{basepath.name}.sfv"
+        csvtree_file = f"{basepath.name}_file_tree.csv"
+        dirtree_file = f"{basepath.name}_directory_tree.txt"
+        jsontree_file = f"{basepath.name}_file_tree.json"
+        metadata_file = f"{basepath.name}_metadata.json"
+        sfv_file = f"{basepath.name}.sfv"
     else:
         raise NotADirectoryError(f"{args.DIRECTORY} does not exist")
 
-    if d is True:
-        checkFileExists(directorytree)
-        createDirectoryTree(basepath, directorytree)
-    elif f is True:
-        checkFileExists(filetree)
-        createFileTree(basepath, filetree)
-    elif m is True:
-        checkFileExists(metadata)
-        createMetadata(basepath, metadata)
-    elif s is True:
-        checkFileExists(sfv)
-        createSfv(basepath, sfv)
-    else:
-        checkFileExists(directorytree)
-        checkFileExists(filetree)
-        checkFileExists(metadata)
-        checkFileExists(sfv)
-        createDirectoryTree(basepath, directorytree)
-        createFileTree(basepath, filetree)
-        createMetadata(basepath, metadata)
-        createSfv(basepath, sfv)
+    if dirtree_arg is True:
+        checkFileExists(dirtree_file)
+        createDirectoryTree(basepath, dirtree_file)
+    if sfv_arg is True:
+        checkFileExists(sfv_file)
+        createSfv(basepath, sfv_file)
+    if csvtree_arg is True:
+        checkFileExists(csvtree_file)
+    if jsontree_arg is True:
+        checkFileExists(jsontree_file)
+        createFileTree(basepath, jsontree_arg, jsontree_file, csvtree_arg, csvtree_file)
+    if meta_arg is True:
+        checkFileExists(metadata_file)
+        createMetadata(basepath, metadata_file)
+    # else:
+    #     checkFileExists(directorytree)
+    #     checkFileExists(sfv)
+    #     checkFileExists(jsonfiletree)
+    #     checkFileExists(csvtree_file)
+    #     checkFileExists(metadata)
+    #     createDirectoryTree(basepath, directorytree)
+    #     createSfv(basepath, sfv)
+    #     createFileTree(basepath, jsonfiletree, c, csvtree_file)
+    #     createMetadata(basepath, metadata)
 
     stop_time = time()
     print(f"Finished in {round(stop_time-start_time, 2)} seconds")
