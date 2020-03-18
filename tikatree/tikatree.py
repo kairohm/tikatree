@@ -47,6 +47,7 @@ def createDirectoryTree(basepath, file):
     for path in paths:
         dirtree_list.append(f"{path.displayable()}\n")
     with open(file, "a", encoding="utf-8") as outfile:
+        outfile.writelines(f"Made with tikatree {VERSION}\n")
         try:
             outfile.writelines(dirtree_list)
         except OSError as oserr:
@@ -92,7 +93,7 @@ def createFileTree(basepath, json, file, csv, csvfile):
     if json is True:
         writeJson(jsondata, file)
     if csv is True:
-        createCsv(jsondata, csvfile)
+        createCsv(basepath, jsondata, csvfile)
 
 
 def createSfv(basepath, file):
@@ -163,31 +164,36 @@ def filesCache(basepath):
     return filescache
 
 
-def createCsv(data, file):
-    with open(file, "w", newline="") as csvfile:
-        fieldnames = ["path", "filename", "modified", "size", "md5", "sha256"]
-        writer = DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for path, filename in data.items():
-            for k, v in filename.items():
-                temp = {}
-                temp["path"] = path
-                temp["filename"] = k
-                temp["modified"] = v["modified"]
-                temp["size"] = v["size"]
-                temp["md5"] = v["md5"]
-                temp["sha256"] = v["sha256"]
-                writer.writerow(temp)
+def createCsv(basepath, data, file):
+    print(f"Creating: {file}")
+    basepath = basepath.name
+    try:
+        with open(file, "w", newline="", encoding="utf-8") as csvfile:
+            fieldnames = ["path", "filename", "modified", "size", "sha256", "root"]
+            writer = DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for path, filename in data.items():
+                for k, v in filename.items():
+                    temp = {}
+                    temp["path"] = path
+                    temp["filename"] = k
+                    temp["modified"] = v["modified"]
+                    temp["size"] = v["size"]
+                    temp["sha256"] = v["sha256"]
+                    temp["root"] = basepath
+                    writer.writerow(temp)
+    except OSError as oserr:
+        print(f"{oserr}: Error writing : {file}")
 
 
 def initArgparse() -> ArgumentParser:
     parser = ArgumentParser(
-        description="A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s",
+        description="A directory tree metadata parser using Apache Tika, by default it runs arguments: -c, -d, -f, -m, -s",
     )
     parser.add_argument(
         "-v", "--version", action="version", version=f"{parser.prog} version {VERSION}",
     )
-    parser.add_argument("DIRECTORY", type=Path, default=".", help="directory to parse")
+    parser.add_argument("DIRECTORY", type=Path, default=".", nargs='+', help="directory(s) to parse")
     # parser.add_argument("FILETYPE", type=str, default="*", nargs='*', help="filetypes to parse, separate with spaces")
     parser.add_argument(
         "-c", "--csvfiletree", action="store_true", help="create csv file tree"
@@ -196,7 +202,7 @@ def initArgparse() -> ArgumentParser:
         "-d", "--directorytree", action="store_true", help="create directory tree"
     )
     parser.add_argument(
-        "-f", "--jsonfiletree", action="store_true", help="create json file tree"
+        "-f", "--jsonfiletree", action="store_true", help="creates a json and csv file tree"
     )
     parser.add_argument("-m", "--metadata", action="store_true", help="parse metadata")
     parser.add_argument("-s", "--sfv", action="store_true", help="create sfv file")
@@ -213,41 +219,43 @@ def main():
     jsontree_arg = args.jsonfiletree
     meta_arg = args.metadata
     sfv_arg = args.sfv
+    for i in args.DIRECTORY:
+        if Path(i).exists() is True:
+            basepath = Path(i)
+            csvtree_file = f"{basepath.name}_file_tree.csv"
+            dirtree_file = f"{basepath.name}_directory_tree.txt"
+            jsontree_file = f"{basepath.name}_file_tree.json"
+            metadata_file = f"{basepath.name}_metadata.json"
+            sfv_file = f"{basepath.name}.sfv"
+        else:
+            raise NotADirectoryError(f"{i} does not exist")
 
-    if Path(args.DIRECTORY).exists() is True:
-        basepath = Path(args.DIRECTORY)
-        csvtree_file = f"{basepath.name}_file_tree.csv"
-        dirtree_file = f"{basepath.name}_directory_tree.txt"
-        jsontree_file = f"{basepath.name}_file_tree.json"
-        metadata_file = f"{basepath.name}_metadata.json"
-        sfv_file = f"{basepath.name}.sfv"
-    else:
-        raise NotADirectoryError(f"{args.DIRECTORY} does not exist")
-
-    if dirtree_arg is True:
-        checkFileExists(dirtree_file)
-        createDirectoryTree(basepath, dirtree_file)
-    if sfv_arg is True:
-        checkFileExists(sfv_file)
-        createSfv(basepath, sfv_file)
-    if csvtree_arg is True:
-        checkFileExists(csvtree_file)
-    if jsontree_arg is True:
-        checkFileExists(jsontree_file)
-        createFileTree(basepath, jsontree_arg, jsontree_file, csvtree_arg, csvtree_file)
-    if meta_arg is True:
-        checkFileExists(metadata_file)
-        createMetadata(basepath, metadata_file)
-    # else:
-    #     checkFileExists(directorytree)
-    #     checkFileExists(sfv)
-    #     checkFileExists(jsonfiletree)
-    #     checkFileExists(csvtree_file)
-    #     checkFileExists(metadata)
-    #     createDirectoryTree(basepath, directorytree)
-    #     createSfv(basepath, sfv)
-    #     createFileTree(basepath, jsonfiletree, c, csvtree_file)
-    #     createMetadata(basepath, metadata)
+        if dirtree_arg is True:
+            checkFileExists(dirtree_file)
+            createDirectoryTree(basepath, dirtree_file)
+        if sfv_arg is True:
+            checkFileExists(sfv_file)
+            createSfv(basepath, sfv_file)
+        if csvtree_arg is True:
+            checkFileExists(csvtree_file)
+        if jsontree_arg is True:
+            checkFileExists(jsontree_file)
+            createFileTree(basepath, jsontree_arg, jsontree_file, csvtree_arg, csvtree_file)
+        if meta_arg is True:
+            checkFileExists(metadata_file)
+            createMetadata(basepath, metadata_file)
+        if False in {dirtree_arg, sfv_arg, csvtree_arg, jsontree_arg, meta_arg}:
+            checkFileExists(dirtree_file)
+            checkFileExists(sfv_file)
+            checkFileExists(csvtree_file)
+            checkFileExists(jsontree_file)
+            checkFileExists(metadata_file)
+            jsontree_arg = True
+            csvtree_arg = True
+            createDirectoryTree(basepath, dirtree_file)
+            createSfv(basepath, sfv_file)
+            createFileTree(basepath, jsontree_arg, jsontree_file, csvtree_arg, csvtree_file)
+            createMetadata(basepath, metadata_file)
 
     stop_time = time()
     print(f"Finished in {round(stop_time-start_time, 2)} seconds")
