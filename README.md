@@ -19,7 +19,7 @@ tikatree uses [tika-python](https://github.com/chrismattmann/tika-python) for in
 
 Open up a command line and type `tikatree <directory>`, by default it'll create all files at or above that directory. You can target multiple directories, just put a space in between each one on the command line.
 
-```
+```bash
 usage: tikatree [-h] [-v] [-d] [-f] [-m] [-s] [-y] DIRECTORY [DIRECTORY ...]
 
 A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s
