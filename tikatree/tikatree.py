@@ -15,7 +15,7 @@ from tika import parser
 from .DisplayablePath import DisplayablePath
 
 BLOCK_SIZE = 65536
-VERSION = "0.0.8"
+VERSION = "0.0.9"
 
 
 def createMetadata(basepath, file):

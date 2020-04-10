@@ -3,11 +3,11 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-REQUIREMENTS = ["tika==1.23.0"]
+REQUIREMENTS = ["tika==1.24"]
 
 setuptools.setup(
     name="tikatree",
-    version="0.0.8",
+    version="0.0.9",
     author="Zeigren",
     author_email="zeigren@zeigren.com",
     description="Directory tree metadata parser using Apache Tika",
