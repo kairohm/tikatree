@@ -1,10 +1,16 @@
 {
     ".": {
         ".gitignore": {
-            "modified": "2020-03-07 13:02:12.754575",
-            "size": "0.1KB",
-            "md5": "60195a3dde5ab89f11b17cf73fa2a15d",
-            "sha256": "812dc1d1105381ce2aebf65bc6245c1efa692283a891cb549abd0f49e514f4e0"
+            "modified": "2020-07-25 05:42:11.124448",
+            "size": "0.11KB",
+            "md5": "19e5a2ff874d76e7d449f00f06a8d8af",
+            "sha256": "16bee885c61dffc3d7c0d61302c8d13c0b9136eb36f568a85be65f7d88de52e1"
+        },
+        "dev_requirements.txt": {
+            "modified": "2020-03-08 14:06:02.619406",
+            "size": "0.15KB",
+            "md5": "1fa683505c42383cf0eac54f2df1f641",
+            "sha256": "2efc79ea18c8120c9cb565ceefd6a0355a48d8c0a2608ff1d0e5439f46b7d462"
         },
         "LICENSE": {
             "modified": "2020-03-06 22:51:24.984411",
@@ -12,43 +18,43 @@
             "md5": "a1fbc18fa04ef91012a383501cea25cc",
             "sha256": "d4ab1739a96f9f381153e2a7436d78c65469065cad6e7bf166815a5890b296da"
         },
-        "notes.txt": {
-            "modified": "2020-03-07 13:06:05.345654",
-            "size": "0.1KB",
-            "md5": "7538dc1dfa02fd79a37f4fca3cc023da",
-            "sha256": "c7b334778944ebf6d7474885faf4d2b65249b1fcd52374ec54da6244f4ca8673"
+        "pyproject.toml": {
+            "modified": "2020-03-08 14:26:19.945357",
+            "size": "0.35KB",
+            "md5": "7de48da2f36076280b0384347617a02a",
+            "sha256": "b391ff6f55079812c45979c28a53fbe46e6855b731abe63ab56df81e02f59002"
         },
         "README.md": {
-            "modified": "2020-03-08 04:50:29.283035",
-            "size": "1.4KB",
-            "md5": "6c894845710cd27260e100c32533b098",
-            "sha256": "d51446fcc13c569381ea6abd114365cfad9327a6978c3cec90ab156f2170e929"
+            "modified": "2020-07-26 05:43:13.592256",
+            "size": "2.69KB",
+            "md5": "9af35d546a5face6a1261ad8bdd84d51",
+            "sha256": "df9de66cfe37d3e1834e18d5a16bafa77ec1459c9771df4b5e337b9c7fec7d2b"
         },
         "requirements.txt": {
-            "modified": "2020-03-08 01:34:07.663419",
+            "modified": "2020-04-10 04:43:47.002540",
             "size": "0.01KB",
-            "md5": "c74d86484743c65b9f3c5aaa045e340b",
-            "sha256": "a2385791bf3dedddaaa31bfa2cf2b523b03a2828ba6fff511a65ac2892f12a73"
+            "md5": "fe76d2e090509aabf406741a2351bb1d",
+            "sha256": "819468c89003fb5a922bc696398ba46a707be7416a2a3632f215baa2a37330eb"
+        },
+        "setup.cfg": {
+            "modified": "2020-03-08 14:25:16.918612",
+            "size": "0.35KB",
+            "md5": "3fccfb552a9ac31317dcc0a52f3727c0",
+            "sha256": "3a328de9097dfb40355dd7dab47ac926aa18bfa63e091d06dacd111f9960118f"
         },
         "setup.py": {
-            "modified": "2020-03-08 01:34:17.423182",
-            "size": "0.79KB",
-            "md5": "49e0c4c44e55657e696f19c6d748f014",
-            "sha256": "c28c680ce7725d74c78acb384a9c9dede2621884d838d01023a74f647d7e07cc"
+            "modified": "2020-07-24 23:58:09.823096",
+            "size": "0.94KB",
+            "md5": "ac3ad7cd55d828f6469882fcad454120",
+            "sha256": "c1e8f645aa94bf2859c6e91c7700a2c93303a9d04ea5c36d8f60c10bfa81008b"
         }
     },
     "tikatree": {
-        "DisplayablePath.py": {
-            "modified": "2020-03-07 23:15:26.154516",
-            "size": "2.35KB",
-            "md5": "6ffe10219319c47125086875e64e6961",
-            "sha256": "2c34c4ca779cef9bbda5c2e3579d2d95dd5b78e0a6cdb248b11c3e07970c9065"
-        },
         "tikatree.py": {
-            "modified": "2020-03-08 04:33:24.668378",
-            "size": "5.6KB",
-            "md5": "3ef541f5cf32ac763300bea9deb3dfdd",
-            "sha256": "035e55ea3001dfd976144b2de680a175b41771b1b670f956924b6c615cc37f2d"
+            "modified": "2020-07-26 05:42:12.124221",
+            "size": "13.27KB",
+            "md5": "cbb4f179676cbaba1a0a4ea9affee724",
+            "sha256": "13a96980342cd7deebba290c00e4c1f1bb7058b3adafb9a7a537a5abc176b21e"
         },
         "__init__.py": {
             "modified": "2020-03-07 02:30:04.445739",

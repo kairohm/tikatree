@@ -1,12 +1,17 @@
-Made with tikatree 0.0.8
+Made with tikatree 0.0.10
+3 Directories
+10 Files
 tikatree/
+├── .git/
 ├── .gitignore
+├── dev_requirements.txt
 ├── LICENSE
-├── notes.txt
+├── output_examples/
+├── pyproject.toml
 ├── README.md
 ├── requirements.txt
+├── setup.cfg
 ├── setup.py
 └── tikatree/
     ├── __init__.py
-    ├── DisplayablePath.py
     └── tikatree.py

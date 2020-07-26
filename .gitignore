@@ -7,3 +7,4 @@
 /tikatree/*/*.pyc
 .DS_Store
 notes.txt
+.vscode
