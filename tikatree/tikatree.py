@@ -10,73 +10,65 @@ from pathlib import Path
 from time import time
 from zlib import crc32
 
+from psutil import Process
 from tika import parser
+from tqdm import tqdm
 
 BLOCK_SIZE = 65536
-VERSION = "0.0.11"
+VERSION = "0.1.0"
 MASK = []
 
 
 def createMetadata(basepath, file):
-    print(f"Creating: {file}")
-    parents = basepath.parents[0]
-    file = parents.joinpath(file)
+    tqdm.write(f"Creating: {file}")
+    file = basepath.parents[0].joinpath(file)
     jsondata = defaultdict(dict)
-    for item in filesCache(basepath):
-        if item.is_file():
-            try:
-                # Get file info
-                pathitem = Path(item)
-                p = Path.resolve(item)
-                parsed = parser.from_file(f"{p}")
-                # Create data from file info
-                file_info = parsed["metadata"]
-                createJson(basepath, pathitem, file_info, jsondata)
-            except OSError as oserr:
-                print(f"{oserr}: Error parsing : {pathitem.name}")
+    for item in tqdm(filesCache(basepath)):
+        try:
+            # Get file info
+            p = Path.resolve(item)
+            parsed = parser.from_file(f"{p}")
+            # Create data from file info
+            file_info = parsed["metadata"]
+            createJson(basepath, item, file_info, jsondata)
+        except OSError as oserr:
+            print(f"{oserr}: Error parsing : {item.name}")
     writeJson(jsondata, file)
 
 
 def createNewMetadata(basepath):
-    print("Parsing Metadata")
+    tqdm.write("Parsing Metadata")
     parents = basepath.parents[0]
     for item in filesCache(basepath):
-        if item.is_file():
-            try:
-                # Get file info
-                parse_file = Path.resolve(item)
-                parsed = parser.from_file(f"{parse_file}")
-                # Create data from file info
-                metadata = parsed["metadata"]
-                file_info = {}
-                file_info[item.name] = getFileInfo(item)
-                file_info["Metadata"] = metadata
-                relative = item.relative_to(parents)
-                *y, z = relative.parts
-                p = Path(parents).joinpath("tikatree", *y)
-                if p.exists():
-                    pass
-                else:
-                    p.mkdir(parents=True)
-                file = Path(p).joinpath(f"{item.name}.json")
-            except OSError as oserr:
-                print(f"{oserr}: Error parsing : {item.name}")
-            print(f"{relative}")
-            writeJson(file_info, file)
+        try:
+            # Get file info
+            parsed = parser.from_file(f"{Path.resolve(item)}")
+            # Create data from file info
+            file_info = {}
+            file_info[item.name] = getFileInfo(item)
+            file_info["Metadata"] = parsed["metadata"]
+            relative = item.relative_to(parents)
+            *y, z = relative.parts
+            p = Path(parents).joinpath("tikatree", *y)
+            if p.exists():
+                pass
+            else:
+                p.mkdir(parents=True)
+            file = Path(p).joinpath(f"{item.name}.json")
+        except OSError as oserr:
+            print(f"{oserr}: Error parsing : {item.name}")
+        writeJson(file_info, file)
 
 
 @lru_cache(maxsize=None)
-def getFileInfo(pathitem):
-    pathitem = Path(pathitem)
+def getFileInfo(item):
     # Get file size, convert to KB
-    size = pathitem.stat().st_size
-    size = round(size / 1024, 2)
+    size = round(item.stat().st_size / 1024, 2)
     # Get modification time (creation time can vary by OS)
-    mod_time = datetime.fromtimestamp(pathitem.stat().st_mtime)
     # Get hashes of file contents
     sha = sha256()
     md = md5()
-    with open(pathitem, "rb") as f:
+    with open(item, "rb") as f:
         fb = f.read(BLOCK_SIZE)
         while len(fb) > 0:
             sha.update(fb)
@@ -84,7 +76,7 @@ def getFileInfo(pathitem):
             fb = f.read(BLOCK_SIZE)
     # Create json data from file info
     file_info = {}
-    file_info["modified"] = f"{mod_time}"
+    file_info["modified"] = f"{datetime.fromtimestamp(item.stat().st_mtime)}"
     file_info["size"] = f"{size}KB"
     file_info["md5"] = md.hexdigest()
     file_info["sha256"] = sha.hexdigest()
@@ -92,15 +84,13 @@ def getFileInfo(pathitem):
 
 
 def createDirectoryTree(basepath, file):
-    print(f"Creating: {file}")
-    parents = basepath.parents[0]
-    file = parents.joinpath(file)
+    tqdm.write(f"Creating: {file}")
+    file = basepath.parents[0].joinpath(file)
     paths = DisplayablePath.make_tree(Path(basepath))
     dirtree_list = []
-    for path in paths:
+    for path in tqdm(paths):
         dirtree_list.append(f"{path.displayable()}\n")
     with open(file, "a", encoding="utf-8") as outfile:
-        outfile.writelines(f"Made with tikatree {VERSION}\n")
         try:
             outfile.writelines(dirtree_list)
         except OSError as oserr:
@@ -108,47 +98,42 @@ def createDirectoryTree(basepath, file):
 
 
 def createFileTree(basepath, file, csvfile):
-    print(f"Creating: {file}")
+    tqdm.write(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
     csvfile = parents.joinpath(csvfile)
     jsondata = defaultdict(dict)
-    for item in filesCache(basepath):
-        if item.is_file():
-            try:
-                # Get file info
-                file_info = getFileInfo(item)
-                pathitem = Path(item)
-                createJson(basepath, pathitem, file_info, jsondata)
-            except OSError as oserr:
-                print(f"{oserr}: Error parsing : {item.name}")
+    for item in tqdm(filesCache(basepath)):
+        try:
+            # Get file info
+            file_info = getFileInfo(item)
+            createJson(basepath, item, file_info, jsondata)
+        except OSError as oserr:
+            print(f"{oserr}: Error parsing : {item.name}")
     writeJson(jsondata, file)
     createCsv(basepath, jsondata, csvfile)
 
 
 def createSfv(basepath, file):
-    print(f"Creating: {file}")
+    tqdm.write(f"Creating: {file}")
     parents = basepath.parents[0]
     file = parents.joinpath(file)
     sfv_dict = {}
-    for item in filesCache(basepath):
-        if item.is_file():
-            try:
-                # Get file info
-                pathitem = Path(item)
-                relative = pathitem.relative_to(parents)
-                crc = 0
-                # Get CRC32 of file contents
-                with open(pathitem, "rb") as f:
+    for item in tqdm(filesCache(basepath)):
+        try:
+            # Get file info
+            relative = item.relative_to(parents)
+            crc = 0
+            # Get CRC32 of file contents
+            with open(item, "rb") as f:
+                fb = f.read(BLOCK_SIZE)
+                while len(fb) > 0:
+                    crc = crc32(fb, crc)
                     fb = f.read(BLOCK_SIZE)
-                    while len(fb) > 0:
-                        crc = crc32(fb, crc)
-                        fb = f.read(BLOCK_SIZE)
-                crc = format(crc & 0xFFFFFFFF, "08x")
-                sfv_dict[f"{relative}"] = f"{crc}"
-                print(f"{relative} {crc}")
-            except OSError as oserr:
-                print(f"{oserr}: Error creating checksums for : {file}")
+            crc = format(crc & 0xFFFFFFFF, "08x")
+            sfv_dict[f"{relative}"] = f"{crc}"
+        except OSError as oserr:
+            print(f"{oserr}: Error creating checksums for : {file}")
     try:
         with open(f"{file}", "a", encoding="utf-8") as f:
             for k, v in sfv_dict.items():
@@ -159,12 +144,9 @@ def createSfv(basepath, file):
 
 def createJson(basepath, pathitem, file_info, jsondata):
     relative = pathitem.relative_to(basepath)
-    parents = relative.parents[0]
-    pathname = pathitem.name
     file_data = {}
-    file_data[f"{pathname}"] = file_info
-    jsondata[f"{parents}"].update(file_data)
-    print(relative)
+    file_data[f"{pathitem.name}"] = file_info
+    jsondata[f"{relative.parents[0]}"].update(file_data)
 
 
 def writeJson(data, jsonfile):
@@ -176,16 +158,15 @@ def writeJson(data, jsonfile):
 
 
 def checkFileExists(basepath, file, yes):
-    parents = basepath.parents[0]
-    file = parents.joinpath(file)
+    file = basepath.parents[0].joinpath(file)
     if Path(file).exists() is True:
         if yes is False:
-            print("Warning")
+            tqdm.write("Warning")
             del_file = input(f"{file} exists, would you like to delete it? Y or N: ")
         if yes is True:
             del_file = "Y"
         if del_file == "Y" or del_file == "y":
-            print(f"Deleting: {file}")
+            tqdm.write(f"Deleting: {file}")
             Path(file).unlink()
         else:
             raise FileExistsError(f"{file} exists")
@@ -195,19 +176,17 @@ def checkFileExists(basepath, file, yes):
 def filesCache(basepath):
     filescache = []
     for item in basepath.rglob("*"):
-        if item.is_symlink():
-            pass
-        elif MASK:
-            parents = item.parents[0]
-            if not any(x in f"{parents}" for x in MASK):
+        if item.is_file():
+            if MASK:
+                if not any(x in f"{item.parents[0]}" for x in MASK):
+                    filescache.append(item)
+            else:
                 filescache.append(item)
-        else:
-            filescache.append(item)
     return filescache
 
 
 def createCsv(basepath, data, file):
-    print(f"Creating: {file}")
+    tqdm.write(f"Creating: {file}")
     basepath = basepath.name
     try:
         with open(file, "w", newline="", encoding="utf-8") as csvfile:
@@ -326,6 +305,15 @@ class DisplayablePath(object):
         return "".join(reversed(parts))
 
 
+def killTika():
+    tikatree_proc = Process()
+    parent = tikatree_proc.parent()
+    tikatree_children = parent.children(recursive=True)
+    for child in tikatree_children:
+        if child.name() == "java.exe":
+            child.terminate()
+
+
 def initArgparse() -> ArgumentParser:
     parser = ArgumentParser(
         description="A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s",
@@ -350,7 +338,10 @@ def initArgparse() -> ArgumentParser:
     )
     parser.add_argument("-m", "--metadata", action="store_true", help="parse metadata")
     parser.add_argument(
-        "-nm", "--newmetadata", action="store_true", help="use new metadata system"
+        "-nm",
+        "--newmetadata",
+        action="store_true",
+        help="create individual metadata files in a 'tikatree' directory",
     )
     parser.add_argument("-s", "--sfv", action="store_true", help="create sfv file")
     parser.add_argument(
@@ -376,39 +367,34 @@ def main():
     for i in args.DIRECTORY:
         if Path(i).exists() is True:
             basepath = Path(i)
-            csvtree_file = f"{basepath.name}_file_tree.csv"
-            dirtree_file = f"{basepath.name}_directory_tree.txt"
-            jsontree_file = f"{basepath.name}_file_tree.json"
-            metadata_file = f"{basepath.name}_metadata.json"
-            sfv_file = f"{basepath.name}.sfv"
         else:
             raise NotADirectoryError(f"{i} does not exist")
-
-        if dirtree is True:
+        default = False
+        if dirtree == sfv == filetree == meta == newmeta is False:
+            default = True
+        if dirtree is True or default is True:
+            dirtree_file = f"{basepath.name}_directory_tree.txt"
             checkFileExists(basepath, dirtree_file, yes)
             createDirectoryTree(basepath, dirtree_file)
-        if sfv is True:
+        if sfv is True or default is True:
+            sfv_file = f"{basepath.name}.sfv"
             checkFileExists(basepath, sfv_file, yes)
             createSfv(basepath, sfv_file)
-        if filetree is True:
+        if filetree is True or default is True:
+            csvtree_file = f"{basepath.name}_file_tree.csv"
+            jsontree_file = f"{basepath.name}_file_tree.json"
             checkFileExists(basepath, jsontree_file, yes)
             checkFileExists(basepath, csvtree_file, yes)
             createFileTree(basepath, jsontree_file, csvtree_file)
-        if meta is True:
+        if meta is True or default is True:
+            metadata_file = f"{basepath.name}_metadata.json"
             checkFileExists(basepath, metadata_file, yes)
             createMetadata(basepath, metadata_file)
         if newmeta is True:
             createNewMetadata(basepath)
-        if dirtree == sfv == filetree == meta == newmeta is False:
-            checkFileExists(basepath, dirtree_file, yes)
-            checkFileExists(basepath, sfv_file, yes)
-            checkFileExists(basepath, csvtree_file, yes)
-            checkFileExists(basepath, jsontree_file, yes)
-            checkFileExists(basepath, metadata_file, yes)
-            createDirectoryTree(basepath, dirtree_file)
-            createSfv(basepath, sfv_file)
-            createFileTree(basepath, jsontree_file, csvtree_file)
-            createMetadata(basepath, metadata_file)
+        filesCache.cache_clear()
+        getFileInfo.cache_clear()
+        killTika()
 
     stop_time = time()
     print(f"Finished in {round(stop_time-start_time, 2)} seconds")

@@ -20,7 +20,7 @@ tikatree uses [tika-python](https://github.com/chrismattmann/tika-python) for in
 Open up a command line and type `tikatree <directory>`, by default it'll create all files at or above that directory. You can target multiple directories, just put a space in between each one on the command line.
 
 ```PowerShell
-usage: tikatree [-h] [-v] [-d] [-e EXCLUDE [EXCLUDE ...]] [-f] [-m] [-s] [-y] DIRECTORY [DIRECTORY ...]
+usage: tikatree [-h] [-v] [-d] [-e EXCLUDE [EXCLUDE ...]] [-f] [-m] [-nm] [-s] [-y] DIRECTORY [DIRECTORY ...]
 
 A directory tree metadata parser using Apache Tika, by default it runs arguments: -d, -f, -m, -s
 
@@ -35,6 +35,7 @@ optional arguments:
                         directory(s) to exclude, includes subdirectories
   -f, --filetree        creates a json and csv file tree
   -m, --metadata        parse metadata
+  -nm, --newmetadata    create individual metadata files in a 'tikatree' directory
   -s, --sfv             create sfv file
   -y, --yes             automatically overwrite older files
 ```
