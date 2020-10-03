@@ -13,7 +13,7 @@ from zlib import crc32
 from tika import parser
 
 BLOCK_SIZE = 65536
-VERSION = "0.0.10"
+VERSION = "0.0.11"
 MASK = []
 
 
@@ -37,6 +37,60 @@ def createMetadata(basepath, file):
     writeJson(jsondata, file)
 
 
+def createNewMetadata(basepath):
+    print("Parsing Metadata")
+    parents = basepath.parents[0]
+    for item in filesCache(basepath):
+        if item.is_file():
+            try:
+                # Get file info
+                parse_file = Path.resolve(item)
+                parsed = parser.from_file(f"{parse_file}")
+                # Create data from file info
+                metadata = parsed["metadata"]
+                file_info = {}
+                file_info[item.name] = getFileInfo(item)
+                file_info["Metadata"] = metadata
+                relative = item.relative_to(parents)
+                *y, z = relative.parts
+                p = Path(parents).joinpath("tikatree", *y)
+                if p.exists():
+                    pass
+                else:
+                    p.mkdir(parents=True)
+                file = Path(p).joinpath(f"{item.name}.json")
+            except OSError as oserr:
+                print(f"{oserr}: Error parsing : {item.name}")
+            print(f"{relative}")
+            writeJson(file_info, file)
+
+
+@lru_cache(maxsize=None)
+def getFileInfo(pathitem):
+    pathitem = Path(pathitem)
+    # Get file size, convert to KB
+    size = pathitem.stat().st_size
+    size = round(size / 1024, 2)
+    # Get modification time (creation time can vary by OS)
+    mod_time = datetime.fromtimestamp(pathitem.stat().st_mtime)
+    # Get hashes of file contents
+    sha = sha256()
+    md = md5()
+    with open(pathitem, "rb") as f:
+        fb = f.read(BLOCK_SIZE)
+        while len(fb) > 0:
+            sha.update(fb)
+            md.update(fb)
+            fb = f.read(BLOCK_SIZE)
+    # Create json data from file info
+    file_info = {}
+    file_info["modified"] = f"{mod_time}"
+    file_info["size"] = f"{size}KB"
+    file_info["md5"] = md.hexdigest()
+    file_info["sha256"] = sha.hexdigest()
+    return file_info
+
+
 def createDirectoryTree(basepath, file):
     print(f"Creating: {file}")
     parents = basepath.parents[0]
@@ -45,12 +99,8 @@ def createDirectoryTree(basepath, file):
     dirtree_list = []
     for path in paths:
         dirtree_list.append(f"{path.displayable()}\n")
-    numdirs = DisplayablePath.num_dirs
-    numfiles = DisplayablePath.num_files
     with open(file, "a", encoding="utf-8") as outfile:
         outfile.writelines(f"Made with tikatree {VERSION}\n")
-        outfile.writelines(f"{numdirs} Directories\n")
-        outfile.writelines(f"{numfiles} Files\n")
         try:
             outfile.writelines(dirtree_list)
         except OSError as oserr:
@@ -67,32 +117,11 @@ def createFileTree(basepath, file, csvfile):
         if item.is_file():
             try:
                 # Get file info
+                file_info = getFileInfo(item)
                 pathitem = Path(item)
-                filename = pathitem.name
-                # Get file size, convert to KB
-                size = pathitem.stat().st_size
-                size = round(size / 1024, 2)
-                # Get modification time (creation time can vary by OS)
-                mod_time = datetime.fromtimestamp(pathitem.stat().st_mtime)
-                # Get hashes of file contents
-                sha = sha256()
-                md = md5()
-                with open(pathitem, "rb") as f:
-                    fb = f.read(BLOCK_SIZE)
-                    while len(fb) > 0:
-                        sha.update(fb)
-                        md.update(fb)
-                        fb = f.read(BLOCK_SIZE)
-
-                # Create json data from file info
-                file_info = {}
-                file_info["modified"] = f"{mod_time}"
-                file_info["size"] = f"{size}KB"
-                file_info["md5"] = md.hexdigest()
-                file_info["sha256"] = sha.hexdigest()
                 createJson(basepath, pathitem, file_info, jsondata)
             except OSError as oserr:
-                print(f"{oserr}: Error parsing : {filename}")
+                print(f"{oserr}: Error parsing : {item.name}")
     writeJson(jsondata, file)
     createCsv(basepath, jsondata, csvfile)
 
@@ -117,7 +146,7 @@ def createSfv(basepath, file):
                         fb = f.read(BLOCK_SIZE)
                 crc = format(crc & 0xFFFFFFFF, "08x")
                 sfv_dict[f"{relative}"] = f"{crc}"
-                print(f"{relative} {crc}\n")
+                print(f"{relative} {crc}")
             except OSError as oserr:
                 print(f"{oserr}: Error creating checksums for : {file}")
     try:
@@ -205,8 +234,6 @@ class DisplayablePath(object):
     display_filename_prefix_last = "└──"
     display_parent_prefix_middle = "    "
     display_parent_prefix_last = "│   "
-    num_dirs = 0
-    num_files = 0
 
     def __init__(self, path, parent_path, is_last):
         self.path = Path(str(path))
@@ -245,10 +272,8 @@ class DisplayablePath(object):
                     parents = path.parents[0]
                     if not any(x in f"{parents}" for x in MASK):
                         if path.is_symlink():
-                            cls.num_files += 1
                             pass
                         elif path.is_dir():
-                            cls.num_dirs += 1
                             yield from cls.make_tree(
                                 path,
                                 parent=displayable_root,
@@ -256,14 +281,11 @@ class DisplayablePath(object):
                                 criteria=criteria,
                             )
                         else:
-                            cls.num_files += 1
                             yield cls(path, displayable_root, is_last)
                 else:
                     if path.is_symlink():
-                        cls.num_files += 1
                         pass
                     elif path.is_dir():
-                        cls.num_dirs += 1
                         yield from cls.make_tree(
                             path,
                             parent=displayable_root,
@@ -271,7 +293,6 @@ class DisplayablePath(object):
                             criteria=criteria,
                         )
                     else:
-                        cls.num_files += 1
                         yield cls(path, displayable_root, is_last)
             except PermissionError:
                 pass
@@ -328,6 +349,9 @@ def initArgparse() -> ArgumentParser:
         "-f", "--filetree", action="store_true", help="creates a json and csv file tree"
     )
     parser.add_argument("-m", "--metadata", action="store_true", help="parse metadata")
+    parser.add_argument(
+        "-nm", "--newmetadata", action="store_true", help="use new metadata system"
+    )
     parser.add_argument("-s", "--sfv", action="store_true", help="create sfv file")
     parser.add_argument(
         "-y", "--yes", action="store_true", help="automatically overwrite older files"
@@ -344,6 +368,7 @@ def main():
     dirtree = args.directorytree
     filetree = args.filetree
     meta = args.metadata
+    newmeta = args.newmetadata
     sfv = args.sfv
     yes = args.yes
     MASK = args.exclude
@@ -372,7 +397,9 @@ def main():
         if meta is True:
             checkFileExists(basepath, metadata_file, yes)
             createMetadata(basepath, metadata_file)
-        if dirtree == sfv == filetree == meta is False:
+        if newmeta is True:
+            createNewMetadata(basepath)
+        if dirtree == sfv == filetree == meta == newmeta is False:
             checkFileExists(basepath, dirtree_file, yes)
             checkFileExists(basepath, sfv_file, yes)
             checkFileExists(basepath, csvtree_file, yes)

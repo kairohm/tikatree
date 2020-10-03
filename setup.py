@@ -7,7 +7,7 @@ REQUIREMENTS = ["tika==1.24"]
 
 setuptools.setup(
     name="tikatree",
-    version="0.0.10",
+    version="0.0.11",
     author="Zeigren",
     author_email="zeigren@zeigren.com",
     description="Directory tree metadata parser using Apache Tika",
